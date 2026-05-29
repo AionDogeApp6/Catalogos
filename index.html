@@ -1,0 +1,354 @@
+<script>
+        // ESTADO INTERNO DE LA APP DE NAVEGACIÓN LOCAL
+        const EstadoApp = {
+            tasaBCV: 36.50,
+            origenTasa: 'Carga Base',
+            carrito: [],
+            esAdminVisual: false
+        };
+
+        const CONFIG_COMPRESION = { anchoMax: 400, calidad: 0.75 };
+
+        // 1. INICIALIZADOR PRINCIPAL AL CARGAR LA PÁGINA
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarPerfilComercial();
+            sincronizarTasaBCV();
+            actualizarVistaProductosGrid();
+        });
+
+        // 2. MODAL DE TÉRMINOS LEGALES DE EXENCIÓN DE RESPONSABILIDAD
+        function toggleAcceptButton() {
+            const chk = document.getElementById('agreeCheckbox');
+            document.getElementById('acceptBtn').classList.toggle('enabled', chk.checked);
+        }
+
+        function acceptTerms() {
+            if (!document.getElementById('agreeCheckbox').checked) return;
+            const modal = document.getElementById('termsModal');
+            modal.style.opacity = '0';
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+            document.getElementById('catalogContent').classList.add('active');
+        }
+
+        // 3. INTERRUPTOR DE PANELES DINÁMICOS
+        function togglePanel(idPanel) {
+            const panel = document.getElementById(idPanel);
+            const estaVisible = panel.style.display === 'block';
+            
+            // Cerrar el panel de administración si se abre el carrito o viceversa para optimizar pantalla móvil
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('cartPanel').style.display = 'none';
+            
+            panel.style.display = estaVisible ? 'none' : 'block';
+            
+            if(idPanel === 'adminPanel') {
+                EstadoApp.esAdminVisual = !estaVisible;
+                actualizarVistaProductosGrid(); // Muestra u oculta botones de borrar
+            }
+        }
+
+        // 4. MOTOR CAMBIARIO AUTOMATIZADO CON RESPALDO OFFLINE
+        async function sincronizarTasaBCV() {
+            try {
+                // Hacemos el fetch a una API pública sin bloqueo de cabecera (CORS Proxy seguro)
+                const respuesta = await fetch('https://open.er-api.com/v6/latest/USD', { method: 'GET' });
+                if (!respuesta.ok) throw new Error('Fallo de red');
+                const datos = await respuesta.json();
+                
+                // Nota técnica: Para despliegue real en Venezuela se puede mapear un endpoint de tasas directo
+                if (datos && datos.rates && datos.rates.VES) {
+                    // Valor estimado base aproximado en caso de respuesta cruzada o proxy directo
+                    EstadoApp.tasaBCV = parseFloat(datos.rates.VES) > 10 ? parseFloat(datos.rates.VES) : 36.80;
+                    EstadoApp.origenTasa = 'API Cambiaria en Vivo';
+                    localStorage.setItem('aion_rate', EstadoApp.tasaBCV.toString());
+                }
+            } catch (e) {
+                console.warn("Modo offline activado para cálculo cambiario.");
+                EstadoApp.tasaBCV = parseFloat(localStorage.getItem('aion_rate')) || 36.80;
+                EstadoApp.origenTasa = 'Memoria Local (Offline)';
+            }
+            document.getElementById('bcvInfoTag').innerHTML = `Tasa oficial BCV: <strong>${EstadoApp.tasaBCV.toFixed(2)} Bs/$</strong> (${EstadoApp.origenTasa})`;
+            actualizarVistaProductosGrid();
+        }
+
+        function solicitarTasaManual() {
+            const input = prompt("Introduce el valor manual de la tasa BCV (Bs/$):", EstadoApp.tasaBCV);
+            if (input && !isNaN(input) && parseFloat(input) > 0) {
+                EstadoApp.tasaBCV = parseFloat(input);
+                EstadoApp.origenTasa = 'Fijada Manualmente';
+                localStorage.setItem('aion_rate', EstadoApp.tasaBCV.toString());
+                document.getElementById('bcvInfoTag').innerHTML = `Tasa oficial BCV: <strong>${EstadoApp.tasaBCV.toFixed(2)} Bs/$</strong> (${EstadoApp.origenTasa})`;
+                actualizarVistaProductosGrid();
+                actualizarInterfazCarritoVisual();
+            }
+        }
+
+        // 5. CAMBIAR PALETA DE COLORES DE LA MARCA EN CALIENTE
+        function aplicarPaletaDeColor(hexColor) {
+            document.documentElement.style.setProperty('--main-color', hexColor);
+            // Generar degradado de estilo dinámico en CSS
+            document.documentElement.style.setProperty('--main-gradient', `linear-gradient(135deg, ${hexColor} 0%, #1e293b 140%)`);
+            localStorage.setItem('aion_brand_color', hexColor);
+        }
+
+        // 6. MANEJO COMPLETO DE IMÁGENES MEDIANTE CANVAS (COMPRESIÓN EN FRONTAL)
+        function procesarYComprimirFoto(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > CONFIG_COMPRESION.anchoMax) {
+                            h = Math.round((h * CONFIG_COMPRESION.anchoMax) / w);
+                            w = CONFIG_COMPRESION.anchoMax;
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', CONFIG_COMPRESION.calidad));
+                    };
+                };
+            });
+        }
+
+        async function cambiarLogoComercial(input) {
+            if (input.files && input.files[0]) {
+                const base64Img = await procesarYComprimirFoto(input.files[0]);
+                document.getElementById('brandLogoContainer').innerHTML = `<img src="${base64Img}">`;
+                localStorage.setItem('aion_logo', base64Img);
+            }
+        }
+
+        // 7. GESTIÓN DE PERFIL COMERCIAL (LOCALSTORAGE)
+        function actualizarPerfilEnCaliente() {
+            const p = {
+                name: document.getElementById('txtBrandName').value.trim() || "Mi Tienda Autónoma",
+                desc: document.getElementById('txtBrandDesc').value.trim() || "Catálogo Social Optimizado",
+                phone: document.getElementById('txtBrandPhone').value.trim() || "584145834403"
+            };
+            document.getElementById('lblBrandName').innerText = p.name;
+            document.getElementById('lblBrandDesc').innerText = p.desc;
+            localStorage.setItem('aion_profile', JSON.stringify(p));
+        }
+
+        function cargarPerfilComercial() {
+            const p = JSON.parse(localStorage.getItem('aion_profile'));
+            const c = localStorage.getItem('aion_brand_color') || "#00f2fe";
+            const l = localStorage.getItem('aion_logo');
+            
+            if(p) {
+                document.getElementById('txtBrandName').value = p.name;
+                document.getElementById('txtBrandDesc').value = p.desc;
+                document.getElementById('txtBrandPhone').value = p.phone;
+                document.getElementById('lblBrandName').innerText = p.name;
+                document.getElementById('lblBrandDesc').innerText = p.desc;
+            }
+            document.getElementById('txtBrandColor').value = c;
+            aplicarPaletaDeColor(c);
+            if(l) document.getElementById('brandLogoContainer').innerHTML = `<img src="${l}">`;
+        }
+
+        // 8. REGISTRO, RENDERIZADO Y BORRADO DE INVENTARIO
+        async function guardarProductoEnInventario() {
+            const descInput = document.getElementById('txtProductDesc');
+            const priceInput = document.getElementById('txtProductPrice');
+            const fileInput = document.getElementById('fileProductImg');
+
+            if(!descInput.value.trim() || !priceInput.value || parseFloat(priceInput.value) <= 0) {
+                alert("Completa los datos del producto con valores válidos.");
+                return;
+            }
+
+            let imgB64 = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23475569'><path d='M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M13.96,12.29L11.21,15.83L9.25,13.47L6.5,17H17.5L13.96,12.29Z'/></svg>";
+            if (fileInput.files && fileInput.files[0]) {
+                imgB64 = await procesarYComprimirFoto(fileInput.files[0]);
+            }
+
+            const nuevoItem = { id: Date.now(), desc: descInput.value.trim(), price: parseFloat(priceInput.value), img: imgB64 };
+            let inv = JSON.parse(localStorage.getItem('aion_inv')) || [];
+            inv.unshift(nuevoItem);
+            localStorage.setItem('aion_inv', JSON.stringify(inv));
+
+            descInput.value = ""; priceInput.value = ""; fileInput.value = "";
+            alert("Producto guardado de manera funcional.");
+            actualizarVistaProductosGrid();
+        }
+
+        function eliminarProducto(id) {
+            if(!confirm("¿Remover producto del catálogo?")) return;
+            let inv = JSON.parse(localStorage.getItem('aion_inv')) || [];
+            inv = inv.filter(i => i.id !== id);
+            localStorage.setItem('aion_inv', JSON.stringify(inv));
+            actualizarVistaProductosGrid();
+        }
+
+        function actualizarVistaProductosGrid() {
+            const grid = document.getElementById('catalogProductsGrid');
+            const inv = JSON.parse(localStorage.getItem('aion_inv')) || [];
+            grid.innerHTML = "";
+
+            if(inv.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/3; color:#64748b; font-size:12px; padding:30px; text-align:center;">No hay productos registrados. Abre el panel de gestión para registrar tu inventario.</p>`;
+                return;
+            }
+
+            inv.forEach(p => {
+                const refBs = p.price * EstadoApp.tasaBCV;
+                const card = document.createElement('div');
+                card.className = "product-card";
+                card.innerHTML = `
+                    <div class="product-img-wrapper">
+                        <img src="${p.img}">
+                        <button class="btn-delete-prod" style="display: ${EstadoApp.esAdminVisual ? 'block' : 'none'};" onclick="eliminarProducto(${p.id})">X</button>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-desc">${p.desc}</div>
+                        <div class="product-price-box">
+                            <span class="price-usd">$${p.price.toFixed(2)}</span>
+                            <span class="price-bs">Ref. ${refBs.toFixed(2)} Bs</span>
+                        </div>
+                        <button class="btn-add-cart" onclick="insertarAlCarrito(${p.id}, '${p.desc.replace(/'/g, "\\'")}', ${p.price})">Añadir 🛒</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 9. LÓGICA COMPLETA DEL CARRITO DE COMPRAS Y DISPARO A WHATSAPP
+        function insertarAlCarrito(id, desc, price) {
+            const item = EstadoApp.carrito.find(i => i.id === id);
+            if(item) { item.cant += 1; } 
+            else { EstadoApp.carrito.push({ id, desc, price, cant: 1 }); }
+            actualizarInterfazCarritoVisual();
+        }
+
+        function modificarCantCart(id, mod) {
+            const item = EstadoApp.carrito.find(i => i.id === id);
+            if(!item) return;
+            item.cant += mod;
+            if(item.cant <= 0) EstadoApp.carrito = EstadoApp.carrito.filter(i => i.id !== id);
+            actualizarInterfazCarritoVisual();
+        }
+
+        function actualizarInterfazCarritoVisual() {
+            const totalArt = EstadoApp.carrito.reduce((s, i) => s + i.cant, 0);
+            const countTag = document.getElementById('carritoContador');
+            countTag.innerText = totalArt;
+            countTag.style.display = totalArt > 0 ? 'flex' : 'none';
+
+            const lista = document.getElementById('carritoListaContenido');
+            const totalBox = document.getElementById('carritoTotalContenedor');
+            if(!lista) return;
+
+            if(EstadoApp.carrito.length === 0) {
+                lista.innerHTML = `<p style="color:#64748b; font-size:12px; padding:10px 0;">El carrito está vacío.</p>`;
+                totalBox.innerHTML = "";
+                return;
+            }
+
+            lista.innerHTML = "";
+            let subUsd = 0;
+            EstadoApp.carrito.forEach(i => {
+                subUsd += (i.price * i.cant);
+                const row = document.createElement('div');
+                row.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:13px;";
+                row.innerHTML = `
+                    <div style="text-align:left; max-width:65%;"><span style="color:#fff;">${i.desc}</span><br><span style="font-size:10px; color:#94a3b8;">$${i.price.toFixed(2)}</span></div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button onclick="modificarCantCart(${i.id}, -1)" style="background:#475569; border:none; color:#fff; width:20px; height:20px; border-radius:4px; font-weight:bold; cursor:pointer;">-</button>
+                        <span style="font-weight:bold; color:#fff; min-width:12px; text-align:center;">${i.cant}</span>
+                        <button onclick="insertarAlCarrito(${i.id}, '${i.desc}', ${i.price})" style="background:#475569; border:none; color:#fff; width:20px; height:20px; border-radius:4px; font-weight:bold; cursor:pointer;">+</button>
+                    </div>
+                `;
+                lista.appendChild(row);
+            });
+
+            const totalBs = subUsd * EstadoApp.tasaBCV;
+            totalBox.innerHTML = `
+                <div style="background:#0f172a; padding:10px; border-radius:8px; margin-top:10px; font-size:12px; line-height:1.6;">
+                    <div style="display:flex; justify-content:space-between;"><span>Total USD:</span><strong style="color:var(--main-color); font-size:14px;">$${subUsd.toFixed(2)}</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Total Ref. Bs (BCV):</span><strong style="color:#fff;">${totalBs.toFixed(2)} Bs</strong></div>
+                </div>
+                <button class="btn-action" style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:#fff; margin-top:10px;" onclick="enviarPedidoPorWhatsAppWhatsApp()">
+                    🟢 Enviar Orden por WhatsApp
+                </button>
+            `;
+        }
+
+        function enviarPedidoPorWhatsAppWhatsApp() {
+            const p = JSON.parse(localStorage.getItem('aion_profile')) || { phone: "584145834403" };
+            const num = p.phone.replace(/[^0-9]/g, '');
+            
+            let m = `🛍️ *NUEVO PEDIDO DESDE TU CATÁLOGO DIGITAL*\n`;
+            m += `_Plataforma Autónoma AionDogeApp6_\n`;
+            m += `--------------------------------------------------\n\n`;
+            
+            let totUsd = 0;
+            EstadoApp.carrito.forEach((i, idx) => {
+                const sub = i.price * i.cant;
+                totUsd += sub;
+                m += `*${idx+1}. ${i.desc}*\n   Cant: ${i.cant} x $${i.price.toFixed(2)} = $${sub.toFixed(2)}\n\n`;
+            });
+            
+            m += `--------------------------------------------------\n`;
+            m += `💰 *TOTAL GENERAL:*\n💵 *USD:* $${totUsd.toFixed(2)}\n🇻🇪 *Ref. Bs:* ${(totUsd * EstadoApp.tasaApp || totUsd * EstadoApp.tasaBCV).toFixed(2)} Bs\n\n`;
+            m += `_Tasa de cambio aplicada: ${EstadoApp.tasaBCV.toFixed(2)} Bs/_\n\n`;
+            m += `⚡ _Por favor, verifícame la disponibilidad de los artículos para coordinar nuestra compra._`;
+
+            window.open(`https://wa.me/${num}?text=${encodeURIComponent(m)}`, '_blank');
+        }
+
+        // 10. CONTROL DEL VENTANA DE DONACIÓN PARA EL CREADOR
+        function openDonationModal(e) { e.preventDefault(); document.getElementById('donationModal').style.display = 'flex'; }
+        function closeDonationModal() { document.getElementById('donationModal').style.display = 'none'; }
+        // ==========================================
+// MÓDULO DE COMPARTIDO UNIVERSAL (REDES Y WA)
+// ==========================================
+function compartirCatalogoCompleto() {
+    // 1. Recuperar los datos actuales del catálogo para el título y descripción
+    const p = JSON.parse(localStorage.getItem('aion_profile')) || { 
+        name: "Mi Tienda Autónoma", 
+        desc: "Catálogo Social Optimizado" 
+    };
+    
+    // 2. Capturar la URL exacta actual del catálogo en la web
+    const urlCatalogo = window.location.href;
+
+    // 3. Estructurar el paquete de datos para redes sociales
+    const datosCompartir = {
+        title: p.name,
+        text: `🛍️ ¡Hola! Te invito a echarle un vistazo a mi catálogo digital activo: *${p.name}* (${p.desc}). Haz tu pedido directo a mi WhatsApp aquí:`,
+        url: urlCatalogo
+    };
+
+    // 4. Intentar disparo con la API Nativa del teléfono (Android / iOS)
+    if (navigator.share) {
+        navigator.share(datosCompartir)
+            .then(() => console.log('Catálogo compartido con éxito.'))
+            .catch((error) => console.log('Compartido cancelado o con error:', error));
+    } else {
+        // PROTOCOLO DE RESPALDO: Si están en una PC vieja o navegador sin soporte de compartido nativo
+        const textoFallback = `${datosCompartir.text} ${urlCatalogo}`;
+        
+        // Copiar enlace al portapapeles automáticamente
+        navigator.clipboard.writeText(urlCatalogo).then(() => {
+            // Abrir una ventana directa de WhatsApp Web / App como alternativa forzada
+            const urlWhatsAppFallback = `https://wa.me/?text=${encodeURIComponent(textoFallback)}`;
+            window.open(urlWhatsAppFallback, '_blank');
+            
+            alert(`📋 ¡Enlace copiado al portapapeles!\n\nComo tu navegador no soporta compartido directo, te redirigimos a WhatsApp para pegar el link en tus redes o estados.`);
+        }).catch(err => {
+            alert("No se pudo copiar el enlace de forma automática. Por favor, copia la URL de la barra de direcciones.");
+        });
+    }
+}
+
+    </script>
+</body>
+</html>
