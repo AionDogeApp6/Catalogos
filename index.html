@@ -1,3 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AionDogeApp6 - Catálogo Autónomo</title>
+    <style>
+        /* VARIABLES CSS DINÁMICAS PARA LA GESTIÓN DE MARCA */
+        :root {
+            --main-color: #00f2fe;       /* Color de acento por defecto (Neon Cyan) */
+            --main-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --bg-main: #0b111e;          /* Fondo oscuro base profesional */
+            --bg-card: #1e293b;          /* Fondo de tarjetas y paneles */
+            --bg-input: #0f172a;         /* Fondo de campos e inputs */
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+        }
+
+        /* ESTILOS GLOBALES */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: #e2e8f0;
+            display: block;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 100px; /* Evita colisión con el pie de página fijo */
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* HEADER DE LA MARCA PERSONALIZADA */
+        .header {
+            text-align: center;
+            padding: 25px 0 15px 0;
+        }
+
+        .logo-container {
+            width: 85px;
+            height: 85px;
+            margin: 0 auto 15px auto;
+            background: var(--main-gradient);
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(0, 242, 254, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-container svg {
+            width: 50px;
+            height: 50px;
+            fill: #0b111e;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        /* ETIQUETA INFORMATIVA DE TASA BCV */
+        .bcv-tag {
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            display: inline-block;
+            margin-top: 5px;
+            color: var(--text-secondary);
+        }
+        .bcv-tag strong { color: var(--main-color); }
+
+        /* INTERRUPTOR DE PANEL DE ADMINISTRACIÓN */
+        .admin-toggle {
+            display: block;
+            width: 100%;
+            background: #273549;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* PANELES (CONFIGURACIÓN Y CARRITO) */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none; /* Ocultos por defecto */
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* FORMULARIOS DE FRONTEND */
+        .form-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--main-color);
+        }
+
+        .btn-action {
+            width: 100%;
+            background: var(--main-gradient);
+            border: none;
+            color: #0b111e;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* CUADRÍCULA DE PRODUCTOS DEL CATÁLOGO */
+        .catalog-preview {
+            filter: blur(6px); /* Bloqueado hasta firmar el contrato */
+            transition: filter 0.4s ease;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .catalog-preview.active {
+            filter: none;
+            user-select: auto;
+            pointer-events: auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .product-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .product-img-wrapper {
+            width: 100%;
+            height: 130px;
+            background: var(--bg-input);
+            position: relative;
+        }
+
+        .product-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .btn-delete-prod {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(239, 68, 68, 0.85);
+            border: none;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            display: none; /* Solo visible en modo administrador */
+        }
+
+        .product-info {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .product-desc {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            line-height: 1.4;
+            height: 34px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            margin-bottom: 8px;
+        }
+
+        .product-price-box {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        .price-usd {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--main-color);
+        }
+
+        .price-bs {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .btn-add-cart {
+            width: 100%;
+            background: #273549;
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #fff;
+            padding: 7px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-add-cart:hover {
+            background: var(--main-color);
+            color: #0b111e;
+        }
+
+        /* MODAL DE CONTRATO OBLIGATORIO */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 17, 30, 0.98);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 242, 254, 0.15);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 440px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            text-align: left;
+        }
+
+        .modal-title {
+            font-size: 15px;
+            color: #fff;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .terms-body {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .terms-body p { margin-bottom: 12px; }
+        .terms-body strong { color: #fff; }
+
+        .checkbox-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-container input {
+            margin-top: 2px;
+            accent-color: var(--main-color);
+        }
+
+        .btn-accept {
+            width: 100%;
+            background: var(--main-gradient);
+            border: none;
+            color: #0b111e;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0.3;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .btn-accept.enabled {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* BOTÓN FLOTANTE FLOTANTE DEL INTERFAZ DEL CARRITO (🛒) */
+        .cart-trigger {
+            position: fixed;
+            bottom: 75px;
+            right: 20px;
+            background: var(--main-gradient);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
+            z-index: 850;
+        }
+
+        .cart-trigger svg {
+            width: 24px;
+            height: 24px;
+            fill: #0b111e;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* PIE DE PÁGINA RECTANGULAR COMPACTO FIJO CON CORAZONES LATERALES */
+        .footer-bar {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 24px);
+            max-width: 460px;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 900;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        .footer-btn-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .footer-logo {
+            width: 28px;
+            height: 28px;
+            background: var(--main-gradient);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .footer-logo svg {
+            width: 16px;
+            height: 16px;
+            fill: #0b111e;
+        }
+
+        .footer-text {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .footer-text .title-btn {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .footer-text .brand-btn {
+            font-size: 9px;
+            color: var(--main-color);
+            font-weight: bold;
+        }
+
+        .footer-btn-right {
+            background: rgba(168, 85, 247, 0.12);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 8px;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: #e9d5ff;
+        }
+
+        .heart-icon {
+            font-size: 11px;
+            color: #c084fc;
+            animation: pulse 1.6s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.18); }
+            100% { transform: scale(1); }
+        }
+
+        .donate-text {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .donate-text .main-text { font-size: 11px; font-weight: 600; color: #fff; }
+        .donate-text .sub-text { font-size: 8px; color: #c084fc; }
+
+        /* MODAL INTERNO DE DONACIÓN (PAGO MÓVIL DEL CREADOR) */
+        .donation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .donation-box {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            border: 1px solid #a855f7;
+            text-align: center;
+        }
+
+        .pago-movil-data {
+            background: var(--bg-input);
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            text-align: left;
+            line-height: 1.8;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .pago-movil-data strong { color: #a855f7; }
+    </style>
+</head>
+<body>
+
+
+
 <script>
         // ESTADO INTERNO DE LA APP DE NAVEGACIÓN LOCAL
         const EstadoApp = {
