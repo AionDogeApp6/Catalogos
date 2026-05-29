@@ -557,8 +557,147 @@
     </style>
 </head>
 <body>
+  <div id="termsModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">⚖️ Términos del Contrato AionDogeApp6</div>
+            <div class="terms-body">
+                <p><strong>1. PROVEEDOR DE INFRAESTRUCTURA:</strong> AionDogeApp6 es exclusivamente una herramienta técnica de visualización en el frontend. Cada catálogo generado es propiedad y responsabilidad única de su respectivo creador independiente.</p>
+                <p><strong>2. DESVINCULACIÓN FINANCIERA TOTAL:</strong> La gerencia y el equipo de AionDogeApp6 <strong>NO se hacen responsables de las transacciones financieras</strong>, acuerdos logísticos, cobros o transferencias que ejecuten los usuarios en el catálogo.</p>
+                <p><strong>3. DONACIONES VERIFICADAS:</strong> El usuario reconoce que la única transacción financiera vinculada de forma legítima a la plataforma es la <strong>Donación al Creador</strong> descrita al pie de página (identificada con símbolos de corazón). Cualquier otro pago comercial es ajeno al sistema.</p>
+                <p><strong>4. MONEDA REFERENCIAL:</strong> Los precios calculados se ejecutan de forma automatizada mediante la API de la tasa oficial del Banco Central de Venezuela (BCV).</p>
+            </div>
+            <label class="checkbox-container">
+                <input type="checkbox" id="agreeCheckbox" onchange="toggleAcceptButton()">
+                <span>Entiendo y acepto los términos del contrato digital de exención de responsabilidad para ver este catálogo independiente.</span>
+            </label>
+            <button id="acceptBtn" class="btn-accept" onclick="acceptTerms()">Aceptar y Desbloquear Vista</button>
+        </div>
+    </div>
 
+    <div class="cart-trigger" onclick="togglePanel('cartPanel')">
+        <svg viewBox="0 0 24 24"><path d="M17,18A2,2 0 0,1 19,20A2,2 0 0,1 17,22A2,2 0 0,1 15,20A2,2 0 0,1 17,18M7,18A2,2 0 0,1 9,20A2,2 0 0,1 7,22A2,2 0 0,1 5,20A2,2 0 0,1 7,18M7.2,14.63L7.17,14.53L8.1,12.87H15.55C16.3,12.87 16.96,12.46 17.3,11.85L21.14,4.89L19.4,3.93L15.55,10.87H8.9L4.27,1H1V3H3L6.6,10.59L5.25,13.04C5.1,13.3 5,13.65 5,14A2,2 0 0,0 7,16H19V14H7.42C7.29,14 7.17,13.89 7.17,13.75L7.2,14.63Z"/></svg>
+        <div id="carritoContador" class="cart-count">0</div>
+    </div>
 
+    <div class="container">
+        
+        <div class="header">
+            <div class="logo-container" id="brandLogoContainer">
+                <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,13.56 19.55,15 18.78,16.22L17.37,14.81C17.77,13.95 18,13 18,12C18,9.5 16.42,7.37 14.22,6.54L13.5,8C14.9,8.54 16,9.9 16,11.5C16,12.15 15.78,12.75 15.42,13.24L13.15,10.97C13.65,10.15 14,9.13 14,8A3,3 0 0,0 11,5C10.53,5 10.09,5.11 9.7,5.3L8.24,3.84C9.35,3.31 10.64,3 12,3M7.5,7A1.5,1.5 0 0,1 9,8.5A1.5,1.5 0 0,1 7.5,10A1.5,1.5 0 0,1 6,8.5A1.5,1.5 0 0,1 7.5,7M10,14H14V16H10V14Z" /></svg>
+            </div>
+            <h1 id="lblBrandName">Mi Tienda Autónoma</h1>
+            <div class="subtitle" id="lblBrandDesc">Catálogo Social Optimizado</div>
+            <div id="bcvInfoTag" class="bcv-tag">Sincronizando tasa oficial BCV...</div>
+        </div>
+
+        <button class="admin-toggle" onclick="togglePanel('adminPanel')">⚙️ Panel de Gestión de Marca e Inventario</button>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button class="admin-toggle" style="margin-bottom: 0; background: var(--main-gradient); color: #0b111e;" onclick="compartirCatalogoCompleto()">
+        🔗 Compartir Catálogo
+    </button>
+    <button class="admin-toggle" style="margin-bottom: 0;" onclick="togglePanel('adminPanel')">
+        ⚙️ Configurar Marca
+    </button>
+</div>
+
+        <div id="adminPanel" class="panel">
+            <div class="panel-title">🎨 Personalizar Marca Comercial</div>
+            <div class="form-group">
+                <label>Nombre de la Empresa / Negocio:</label>
+                <input type="text" id="txtBrandName" class="form-control" placeholder="Ej: Renderizado Móvil" oninput="actualizarPerfilEnCaliente()">
+            </div>
+            <div class="form-group">
+                <label>Slogan o Descripción Corta:</label>
+                <input type="text" id="txtBrandDesc" class="form-control" placeholder="Ej: Carpintería y Diseño" oninput="actualizarPerfilEnCaliente()">
+            </div>
+            <div class="form-group">
+                <label>WhatsApp de Contacto (Formato Internacional completo):</label>
+                <input type="text" id="txtBrandPhone" class="form-control" placeholder="Ej: 584145834403" onchange="actualizarPerfilEnCaliente()">
+            </div>
+            <div class="form-group">
+                <label>Color de Preferencia de la Marca:</label>
+                <input type="color" id="txtBrandColor" style="width:100%; height:35px; border-radius:6px; cursor:pointer; background:none; border:1px solid rgba(255,255,255,0.2);" value="#00f2fe" onchange="aplicarPaletaDeColor(this.value)">
+            </div>
+            <div class="form-group">
+                <label>Slogan o Descripción Corta:</label>
+                <input type="text" id="txtBrandDesc" class="form-control" placeholder="Ej: Carpintería y Diseño" oninput="actualizarPerfilEnCaliente()">
+            </div>
+            <div class="form-group">
+                <label>WhatsApp de Contacto (Formato Internacional completo):</label>
+                <input type="text" id="txtBrandPhone" class="form-control" placeholder="Ej: 584145834403" onchange="actualizarPerfilEnCaliente()">
+            </div>
+            <div class="form-group">
+                <label>Color de Preferencia de la Marca:</label>
+                <input type="color" id="txtBrandColor" style="width:100%; height:35px; border-radius:6px; cursor:pointer; background:none; border:1px solid rgba(255,255,255,0.2);" value="#00f2fe" onchange="aplicarPaletaDeColor(this.value)">
+            </div>
+            <div class="form-group">
+                <label>Logo Comercial (Cámara o Galería):</label>
+                <input type="file" id="fileBrandLogo" class="form-control" accept="image/*" onchange="cambiarLogoComercial(this)">
+            </div>
+
+            <div class="panel-title" style="margin-top:25px;">📦 Registrar Nuevo Producto</div>
+            <div class="form-group">
+                <label>Descripción del Artículo:</label>
+                <input type="text" id="txtProductDesc" class="form-control" placeholder="Ej: Mueble de Cocina Minimalista">
+            </div>
+            <div class="form-group">
+                <label>Precio en Dólares ($):</label>
+                <input type="number" id="txtProductPrice" class="form-control" placeholder="Ej: 150.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Foto del Producto:</label>
+                <input type="file" id="fileProductImg" class="form-control" accept="image/*" capture="environment">
+            </div>
+            <button class="btn-action" onclick="guardarProductoEnInventario()">Añadir al Catálogo</button>
+            <button class="btn-action" style="background:#475569; color:#fff; margin-top:8px;" onclick="solicitarTasaManual()">Ajustar Tasa BCV Manual</button>
+        </div>
+
+        <div id="cartPanel" class="panel">
+            <div class="panel-title">🛒 Tus Artículos Seleccionados</div>
+            <div id="carritoListaContenido"></div>
+            <div id="carritoTotalContenedor"></div>
+        </div>
+
+        <div id="catalogContent" class="catalog-preview">
+            <div class="products-grid" id="catalogProductsGrid">
+                </div>
+        </div>
+
+    </div>
+
+    <div class="footer-bar">
+        <a href="#" class="footer-btn-left" onclick="alert('Copia el enlace de esta barra de direcciones para compartir tu catálogo gratuito con tus clientes en tus redes sociales.')">
+            <div class="footer-logo">
+                <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,13.56 19.55,15 18.78,16.22L17.37,14.81C17.77,13.95 18,13 18,12C18,9.5 16.42,7.37 14.22,6.54L13.5,8C14.9,8.54 16,9.9 16,11.5C16,12.15 15.78,12.75 15.42,13.24L13.15,10.97C13.65,10.15 14,9.13 14,8A3,3 0 0,0 11,5C10.53,5 10.09,5.11 9.7,5.3L8.24,3.84C9.35,3.31 10.64,3 12,3M7.5,7A1.5,1.5 0 0,1 9,8.5A1.5,1.5 0 0,1 7.5,10A1.5,1.5 0 0,1 6,8.5A1.5,1.5 0 0,1 7.5,7M10,14H14V16H10V14Z" /></svg>
+            </div>
+            <div class="footer-text">
+                <span class="title-btn">Crear Catálogo Gratuito</span>
+                <span class="brand-btn">AionDogeApp6 - Siempre Funcional</span>
+            </div>
+        </a>
+
+        <a href="#" class="footer-btn-right" onclick="openDonationModal(event)">
+            <span class="heart-icon">❤️</span>
+            <div class="donate-text">
+                <span class="main-text">Donar al Creador</span>
+                <span class="sub-text">Soporte Tecnológico</span>
+            </div>
+            <span class="heart-icon">❤️</span>
+        </a>
+    </div>
+
+    <div id="donationModal" class="donation-modal">
+        <div class="donation-box">
+            <h3 style="color:#fff; margin-bottom:12px; font-size:15px;">🎁 Apoyo a la Infraestructura Aion</h3>
+            <div class="pago-movil-data">
+                <strong>Banco:</strong> 0102 - Banco de Venezuela<br>
+                <strong>Cédula:</strong> V-18.861.481<br>
+                <strong>Teléfono:</strong> 0414-5834403
+            </div>
+            <button class="btn-close-donation" onclick="closeDonationModal()">Cerrar Ventana</button>
+        </div>
+    </div>
 
 <script>
         // ESTADO INTERNO DE LA APP DE NAVEGACIÓN LOCAL
