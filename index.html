@@ -553,7 +553,72 @@
             margin-bottom: 15px;
             border: 1px solid rgba(255,255,255,0.05);
         }
-        .pago-movil-data strong { color: #a855f7; }
+        .pago-movil-data strong { color: #a855f7; }/* Colores principales y variables del sistema */
+:root {
+    --bg-color: #121212;
+    --container-bg: #1e1e1e;
+    --accent-color: #00ff66; /* Verde Neón Profesional */
+    --text-color: #ffffff;
+    --muted-text: #aaaaaa;
+}
+
+/* Estilos para los botones del catálogo */
+.btn {
+    background-color: var(--accent-color);
+    color: #000;
+    border: none;
+    padding: 12px 20px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background-color: #333;
+    color: var(--text-color);
+    border: 1px solid #444;
+}
+
+/* Tarjetas de los artículos exhibidos */
+.card-articulo {
+    background: #252525;
+    border-left: 4px solid var(--accent-color);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 0 8px 8px 0;
+    box-sizing: border-box;
+}
+
+.card-articulo img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: block;
+}
+
+/* Zona discontinua para las opciones de exportar */
+.zona-compartir {
+    background: #1a2e22;
+    border: 1px dashed var(--accent-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Clase global para ocultar elementos dinámicamente */
+.hidden { 
+    display: none !important; 
+}
+
     </style>
 </head>
 <body>
